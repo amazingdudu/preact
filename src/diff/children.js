@@ -187,6 +187,11 @@ export function diffChildren(
 				// is a Fragment-like, then oldDom has already been set to that child's _nextDom.
 				// If the last child is a DOM VNode, then oldDom will be set to that DOM
 				// node's nextSibling.
+				// 因为newParentVNode是类似于fragment的，
+				// 所以我们需要将它的_nextDom属性设置为它的最后一个子DOM节点的nextSibling。'
+				//  oldDom 在这里包含正确的值，因为如果最后一个子节点是一个类似fragment的子节点，
+				// 那么oldDom已经被设置为该子节点的_nextDom。如果最后一个子节点是一个DOM VNode，
+				// 那么oldDom将被设置为该DOM节点的nextSibling。
 				newParentVNode._nextDom = oldDom;
 			}
 		} else if (

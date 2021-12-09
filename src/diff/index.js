@@ -22,6 +22,7 @@ import options from '../options';
  * Fragments that have siblings. In most cases, it starts out as `oldChildren[0]._dom`.
  * @param {boolean} [isHydrating] Whether or not we are in hydration
  */
+// 生命周期 https://preactjs.com/guide/v10/components/#lifecycle-methods
 export function diff(
 	parentDom,
 	newVNode,
@@ -68,34 +69,45 @@ export function diff(
 
 			// Get component and set it to `c`
 			if (oldVNode._component) {
+				// 新旧Vnode生成的component相同
 				c = newVNode._component = oldVNode._component;
 				clearProcessingException = c._processingException = c._pendingError;
 			} else {
 				// Instantiate the new component
+				// 类组件继承自Component，实例化
 				if ('prototype' in newType && newType.prototype.render) {
 					// @ts-ignore The check above verifies that newType is suppose to be constructed
 					newVNode._component = c = new newType(newProps, componentContext); // eslint-disable-line new-cap
 				} else {
 					// @ts-ignore Trust me, Component implements the interface we want
+					// 函数组件，实例化Component, 将实例的constructor执行改函数，并重写render方法
 					newVNode._component = c = new Component(newProps, componentContext);
 					c.constructor = newType;
 					c.render = doRender;
 				}
 				if (provider) provider.sub(c);
 
+				// 设置props
 				c.props = newProps;
+				// 如果state不存在，初始化为空对象
 				if (!c.state) c.state = {};
 				c.context = componentContext;
 				c._globalContext = globalContext;
+				// isNew标记组件新创建
+				// _dirty标记组件在diff中
 				isNew = c._dirty = true;
+				// 初始化_renderCallbacks，保存一些生命周期函数或setState回调函数
 				c._renderCallbacks = [];
 			}
 
-			// Invoke getDerivedStateFromProps
+			
+			// 首次实例化组件，_nextState == null
 			if (c._nextState == null) {
 				c._nextState = c.state;
 			}
+			// 调用组件的静态方法 getDerivedStateFromProps
 			if (newType.getDerivedStateFromProps != null) {
+				// 当c._nextState 和 c.state指向同一个对象时需要切断引用
 				if (c._nextState == c.state) {
 					c._nextState = assign({}, c._nextState);
 				}
@@ -105,11 +117,13 @@ export function diff(
 					newType.getDerivedStateFromProps(newProps, c._nextState)
 				);
 			}
-
+			// 保存旧props,state
 			oldProps = c.props;
 			oldState = c.state;
 
 			// Invoke pre-render lifecycle methods
+			// 调用创建组件生命周期
+			// 优先使用getDerivedStateFromProps，componentWillMount即将废弃
 			if (isNew) {
 				if (
 					newType.getDerivedStateFromProps == null &&
@@ -117,11 +131,13 @@ export function diff(
 				) {
 					c.componentWillMount();
 				}
-
+				// componentDidMount放入_renderCallbacks，render之后会调用
 				if (c.componentDidMount != null) {
 					c._renderCallbacks.push(c.componentDidMount);
 				}
 			} else {
+				// 调用更新组件时的生命周期
+				// 优先使用getDerivedStateFromProps，componentWillReceiveProps即将废弃
 				if (
 					newType.getDerivedStateFromProps == null &&
 					newProps !== oldProps &&
@@ -130,6 +146,7 @@ export function diff(
 					c.componentWillReceiveProps(newProps, componentContext);
 				}
 
+				// 非强制更新，并且shouldComponentUpdate返回false阻止重新渲染
 				if (
 					(!c._force &&
 						c.shouldComponentUpdate != null &&
@@ -140,9 +157,11 @@ export function diff(
 						) === false) ||
 					newVNode._original === oldVNode._original
 				) {
+					//  更新props,state
 					c.props = newProps;
 					c.state = c._nextState;
 					// More info about this here: https://gist.github.com/JoviDeCroock/bec5f2ce93544d2e6070ef8e0036e4e8
+					//????????
 					if (newVNode._original !== oldVNode._original) c._dirty = false;
 					c._vnode = newVNode;
 					newVNode._dom = oldVNode._dom;
@@ -153,14 +172,14 @@ export function diff(
 					if (c._renderCallbacks.length) {
 						commitQueue.push(c);
 					}
-
+					// 中断，不再diff子组件
 					break outer;
 				}
-
+				// render之前执行
 				if (c.componentWillUpdate != null) {
 					c.componentWillUpdate(newProps, c._nextState, componentContext);
 				}
-
+				// render之后执行
 				if (c.componentDidUpdate != null) {
 					c._renderCallbacks.push(() => {
 						c.componentDidUpdate(oldProps, oldState, snapshot);
@@ -174,23 +193,27 @@ export function diff(
 
 			if ((tmp = options._render)) tmp(newVNode);
 
+			// 允许开启下一次事务
 			c._dirty = false;
 			c._vnode = newVNode;
 			c._parentDom = parentDom;
 
+			// 将props,state作为参数传递给 render，与react不同
 			tmp = c.render(c.props, c.state, c.context);
 
 			// Handle setState called in render, see #2553
+			// https://codesandbox.io/s/compassionate-rgb-kl85q?file=/src/index.js:471-588
+			//? 什么场景需要在render中setState???
 			c.state = c._nextState;
 
 			if (c.getChildContext != null) {
 				globalContext = assign(assign({}, globalContext), c.getChildContext());
 			}
-
+			// https://zh-hans.reactjs.org/docs/react-component.html#getsnapshotbeforeupdate
 			if (!isNew && c.getSnapshotBeforeUpdate != null) {
 				snapshot = c.getSnapshotBeforeUpdate(oldProps, oldState);
 			}
-
+			// 判断是不是最外层的Fragment，如果是直接返回子节点
 			let isTopLevelFragment =
 				tmp != null && tmp.type === Fragment && tmp.key == null;
 			let renderResult = isTopLevelFragment ? tmp.props.children : tmp;
@@ -213,6 +236,7 @@ export function diff(
 			// We successfully rendered this VNode, unset any stored hydration/bailout state:
 			newVNode._hydrating = null;
 
+			// 子组件先进入队列，然后是父组件，所以子组件componentDidMount->父组件componentDidMount
 			if (c._renderCallbacks.length) {
 				commitQueue.push(c);
 			}

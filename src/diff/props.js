@@ -12,13 +12,13 @@ import options from '../options';
  */
 export function diffProps(dom, newProps, oldProps, isSvg, hydrate) {
 	let i;
-
+	// 将oldProps中存在，但是newProps在不存在的属性置为null
 	for (i in oldProps) {
 		if (i !== 'children' && i !== 'key' && !(i in newProps)) {
 			setProperty(dom, i, null, oldProps[i], isSvg);
 		}
 	}
-
+	// 将newProps中与oldProps中不相等的属性值更新
 	for (i in newProps) {
 		if (
 			(!hydrate || typeof newProps[i] == 'function') &&
@@ -34,11 +34,14 @@ export function diffProps(dom, newProps, oldProps, isSvg, hydrate) {
 }
 
 function setStyle(style, key, value) {
+	// 浏览器私有前缀属性 -webkit- 或者变量 --main-color: red;
 	if (key[0] === '-') {
 		style.setProperty(key, value);
-	} else if (value == null) {
+	} else if (value == null) { 
 		style[key] = '';
-	} else if (typeof value != 'number' || IS_NON_DIMENSIONAL.test(key)) {
+	}
+	// 字符串或者一些不需要加px的属性的值的number类型是属性
+	else if (typeof value != 'number' || IS_NON_DIMENSIONAL.test(key)) {
 		style[key] = value;
 	} else {
 		style[key] = value + 'px';
@@ -57,21 +60,24 @@ export function setProperty(dom, name, value, oldValue, isSvg) {
 	let useCapture;
 
 	o: if (name === 'style') {
+		// 支持style的值为字符串
 		if (typeof value == 'string') {
 			dom.style.cssText = value;
 		} else {
+			// 如果newValue是object，oldValue是string类型，需要先重置
 			if (typeof oldValue == 'string') {
 				dom.style.cssText = oldValue = '';
 			}
 
 			if (oldValue) {
+				// 如果oldStyle中的属性不在newStyle中存在，则重置
 				for (name in oldValue) {
 					if (!(value && name in value)) {
 						setStyle(dom.style, name, '');
 					}
 				}
 			}
-
+			// 设置新属性
 			if (value) {
 				for (name in value) {
 					if (!oldValue || value[name] !== oldValue[name]) {
@@ -82,22 +88,29 @@ export function setProperty(dom, name, value, oldValue, isSvg) {
 		}
 	}
 	// Benchmark for comparison: https://esbench.com/bench/574c954bdb965b9a00965ac6
+	// 处理事件
 	else if (name[0] === 'o' && name[1] === 'n') {
+		// 是否在捕获阶段触发
 		useCapture = name !== (name = name.replace(/Capture$/, ''));
 
 		// Infer correct casing for DOM built-in events:
+		//? 支持onClick或onclick，为什么不直接name.toLowerCase().slice(2)
 		if (name.toLowerCase() in dom) name = name.toLowerCase().slice(2);
 		else name = name.slice(2);
 
+		// dom上添加自定义属性保存事件
 		if (!dom._listeners) dom._listeners = {};
 		dom._listeners[name + useCapture] = value;
 
 		if (value) {
+			// 如果原来没有事件，需要绑定， 如果原来已经绑定了事件，此处不需要处理，
+			// 因为执行dom._listeners[name + useCapture] = value时;已经替换了新的事件处理函数
 			if (!oldValue) {
 				const handler = useCapture ? eventProxyCapture : eventProxy;
 				dom.addEventListener(name, handler, useCapture);
 			}
 		} else {
+			// 解绑
 			const handler = useCapture ? eventProxyCapture : eventProxy;
 			dom.removeEventListener(name, handler, useCapture);
 		}

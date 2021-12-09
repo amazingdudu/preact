@@ -29,6 +29,7 @@ export function render(vnode, parentDom, replaceNode) {
 		? null
 		: (replaceNode && replaceNode._children) || parentDom._children;
 
+	// 用Fragment包裹成组件类型的vnode
 	vnode = (
 		(!isHydrating && replaceNode) ||
 		parentDom

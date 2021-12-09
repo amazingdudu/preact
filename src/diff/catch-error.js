@@ -1,10 +1,13 @@
 /**
  * Find the closest error boundary to a thrown error and call it
+ * 找到离抛出错误最近的错误边界并调用生命周期
  * @param {object} error The thrown value
  * @param {import('../internal').VNode} vnode The vnode that threw
  * the error that was caught (except for unmounting when this parameter
  * is the highest parent that was being unmounted)
+ * 最外层的vnode没有parentNode，所以即使抛出异常也不处理
  */
+ 
 export function _catchError(error, vnode) {
 	/** @type {import('../internal').Component} */
 	let component, ctor, handled;
@@ -15,6 +18,7 @@ export function _catchError(error, vnode) {
 				ctor = component.constructor;
 
 				if (ctor && ctor.getDerivedStateFromError != null) {
+					// 将抛出的错误作为参数，并返回一个值以更新 state
 					component.setState(ctor.getDerivedStateFromError(error));
 					handled = component._dirty;
 				}

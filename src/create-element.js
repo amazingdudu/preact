@@ -16,12 +16,14 @@ export function createElement(type, props, children) {
 		key,
 		ref,
 		i;
+	// 过滤key,ref
 	for (i in props) {
 		if (i == 'key') key = props[i];
 		else if (i == 'ref') ref = props[i];
 		else normalizedProps[i] = props[i];
 	}
 
+	// 收集子vnode
 	if (arguments.length > 2) {
 		normalizedProps.children =
 			arguments.length > 3 ? slice.call(arguments, 2) : children;
@@ -29,6 +31,7 @@ export function createElement(type, props, children) {
 
 	// If a Component VNode, check for and apply defaultProps
 	// Note: type may be undefined in development, must never error here.
+	// 复制默认属性
 	if (typeof type == 'function' && type.defaultProps != null) {
 		for (i in type.defaultProps) {
 			if (normalizedProps[i] === undefined) {
@@ -60,18 +63,26 @@ export function createVNode(type, props, key, ref, original) {
 		props,
 		key,
 		ref,
+		// 保存子vnode
 		_children: null,
+		// 指向父vnode
 		_parent: null,
+		// vnode在树中的深度
 		_depth: 0,
+		// 保存当前节点生成的真实dom
 		_dom: null,
 		// _nextDom must be initialized to undefined b/c it will eventually
 		// be set to dom.nextSibling which can return `null` and it is important
 		// to be able to distinguish between an uninitialized _nextDom and
 		// a _nextDom that has been set to `null`
+		// 兄弟vnode的创建的dom
 		_nextDom: undefined,
+		// 保存组件vnode实例化后的组件实例
 		_component: null,
 		_hydrating: null,
+		// preact会认为constructor为undefined的对象是vnode
 		constructor: undefined,
+		//? 不懂
 		_original: original == null ? ++vnodeId : original
 	};
 
@@ -84,7 +95,7 @@ export function createVNode(type, props, key, ref, original) {
 export function createRef() {
 	return { current: null };
 }
-
+// 内置组件，直接返回子vnode
 export function Fragment(props) {
 	return props.children;
 }

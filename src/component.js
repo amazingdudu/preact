@@ -79,6 +79,15 @@ Component.prototype.forceUpdate = function(callback) {
  * ancestor's `getChildContext()`
  * @returns {import('./index').ComponentChildren | void}
  */
+/**
+ * 如果子类不写render，默认使用父类的render
+ *  class Com extends Component {
+ * 	}
+ * 
+ *  <Com>
+ *  <div>hello</div>
+ * </Com>
+ */
 Component.prototype.render = Fragment;
 
 /**
