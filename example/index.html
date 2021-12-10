@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+
+<body>
+	<div id="app"><div class="container"><h1><span>hello world</span></h1></div></div>
+</div>
+	<script type="module">
+		import { h, Component, render,hydrate } from './preact.js';
+        import htm from './htm.js';
+        const html = htm.bind(h);
+      
+
+        class App extends Component{
+            constructor(props) {
+                super(props);
+
+                this.state = {
+                    visible: true
+                }
+                this.handleClick = this.handleClick.bind(this)
+            }
+
+            handleClick() {
+                this.setState({
+                    visible: false
+                })
+            }
+
+            render() {
+                const a = h('div' ,{
+                    className:'container'
+                }, h('h1', {
+                    onClick:this.handleClick,
+                }, h('span', null ,'hello world')));
+                console.log(a);
+                return a;
+            }
+        }
+
+        hydrate(html`<${App} />`, document.getElementById('app'));
+ 
+      </script>
+</body>
+
+</html>
