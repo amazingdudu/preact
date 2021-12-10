@@ -246,10 +246,13 @@ export function diff(
 			}
 
 			c._force = false;
-		} else if (
+		}
+		// 复用节点，通过_original判断是否为原始类型或者是clone的节点
+		else if (
 			excessDomChildren == null &&
 			newVNode._original === oldVNode._original
 		) {
+			
 			newVNode._children = oldVNode._children;
 			newVNode._dom = oldVNode._dom;
 		} else {
@@ -353,13 +356,14 @@ function diffElementNodes(
 			}
 		}
 	}
-
+	// 首次渲染dom不存在，创建一个新的dom直接返回
 	if (dom == null) {
+		// 在diffChildren中文本节点的type被设置为null
 		if (nodeType === null) {
 			// @ts-ignore createTextNode returns Text, we expect PreactElement
 			return document.createTextNode(newProps);
 		}
-
+		// 父元素是sgv,创建一个具有指定的命名空间URI和限定名称的元素
 		if (isSvg) {
 			dom = document.createElementNS(
 				'http://www.w3.org/2000/svg',
@@ -367,6 +371,7 @@ function diffElementNodes(
 				nodeType
 			);
 		} else {
+			// https://developer.mozilla.org/zh-CN/docs/Web/API/Document/createElement
 			dom = document.createElement(
 				// @ts-ignore We know `newVNode.type` is a string
 				nodeType,
@@ -382,6 +387,7 @@ function diffElementNodes(
 
 	if (nodeType === null) {
 		// During hydration, we still have to split merged text from SSR'd HTML.
+		// 更新text节点
 		if (oldProps !== newProps && (!isHydrating || dom.data !== newProps)) {
 			dom.data = newProps;
 		}
@@ -503,10 +509,11 @@ export function unmount(vnode, parentVNode, skipRemove) {
 	let r;
 	if (options.unmount) options.unmount(vnode);
 
+	//?  
 	if ((r = vnode.ref)) {
 		if (!r.current || r.current === vnode._dom) applyRef(r, null, parentVNode);
 	}
-
+	// 如果是组件vnode，调用生命周期
 	if ((r = vnode._component) != null) {
 		if (r.componentWillUnmount) {
 			try {
@@ -518,7 +525,7 @@ export function unmount(vnode, parentVNode, skipRemove) {
 
 		r.base = r._parentDom = null;
 	}
-
+	// 递归卸在组件
 	if ((r = vnode._children)) {
 		for (let i = 0; i < r.length; i++) {
 			if (r[i]) {
@@ -526,7 +533,7 @@ export function unmount(vnode, parentVNode, skipRemove) {
 			}
 		}
 	}
-
+	// 移除dom VNode
 	if (!skipRemove && vnode._dom != null) removeNode(vnode._dom);
 
 	// Must be set to `undefined` to properly clean up `_nextDom`

@@ -82,7 +82,7 @@ export function createVNode(type, props, key, ref, original) {
 		_hydrating: null,
 		// preact会认为constructor为undefined的对象是vnode
 		constructor: undefined,
-		//? 不懂
+		// 判断是否为同一个vnode，复用
 		_original: original == null ? ++vnodeId : original
 	};
 

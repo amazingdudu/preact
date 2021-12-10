@@ -18,6 +18,7 @@ export function render(vnode, parentDom, replaceNode) {
 	// We abuse the `replaceNode` parameter in `hydrate()` to signal if we are in
 	// hydration mode or not by passing the `hydrate` function instead of a DOM
 	// element..
+	// 是否为服务端渲染
 	let isHydrating = typeof replaceNode === 'function';
 
 	// To be able to support calling `render()` multiple times on the same
@@ -45,6 +46,7 @@ export function render(vnode, parentDom, replaceNode) {
 		oldVNode || EMPTY_OBJ,
 		EMPTY_OBJ,
 		parentDom.ownerSVGElement !== undefined,
+		// 服务端渲染可复用的dom节点
 		!isHydrating && replaceNode
 			? [replaceNode]
 			: oldVNode
@@ -53,6 +55,7 @@ export function render(vnode, parentDom, replaceNode) {
 			? slice.call(parentDom.childNodes)
 			: null,
 		commitQueue,
+		// oldDom 服务端渲染 parentDom的第一个子节点
 		!isHydrating && replaceNode
 			? replaceNode
 			: oldVNode
